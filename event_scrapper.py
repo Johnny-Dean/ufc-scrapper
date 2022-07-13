@@ -23,10 +23,10 @@ def scrape_event(url: str):
         first_fighter = fighters[0].text.strip()
         second_fighter = fighters[1].text.strip()
         fight_card["Fights"].append((first_fighter, second_fighter))
+
     # Fight Night we need to append the main fighters of the card to distinguish the fight nights
-    if fight_card["Title"] == "UFC Fight Night":
-        main_event = fight_card["Fights"][0]
-        fight_card["Title"] = "UFC Fight Night: " + main_event[0] + " vs " + main_event[1]
+    main_event = fight_card["Fights"][0]
+    fight_card["Title"] = fight_card["Title"] + ": " + main_event[0] + " vs " + main_event[1]
     return fight_card
 
 
