@@ -1,26 +1,7 @@
 from bs4 import BeautifulSoup
-from typing import List, Tuple
+from typing import List
 from database import get_database
 import requests
-
-
-def split_name(name: str) -> Tuple[str, str]:
-    """  Split up a fighter's name
-
-    :param name: the name to split up.
-    :return: a tuple containing the first and last name.
-    """
-    split_up_name = name.split()
-    if len(split_up_name) == 1:
-        return split_up_name[0], ""
-    else:
-        # Check if fighter has more than one last name.
-        # ex: Silvana Gomez Juarez
-        last_name = ""
-        for last in split_up_name[1:]:
-            last_name += last + " "
-
-    return split_up_name[0], last_name.strip()
 
 
 def get_fighter_record(doc) -> List:
@@ -36,9 +17,10 @@ def get_fighter_record(doc) -> List:
         fight = {}
         fight_info = f.find_all("p", {"class": "b-fight-details__table-text"})
 
-        fight["Outcome"] = fight_info[0].i.text
+        fight["Outcome"] = fight_info[0].i.text.capitalize()
         fight["Opponent"] = fight_info[2].text.strip()
         fight["Method"] = fight_info[13].text.strip()
+        # Round should probably be type casted to integer in future scrapping
         fight["Round"] = fight_info[15].text.strip()
         fight["Time"] = fight_info[16].text.strip()
 
@@ -56,7 +38,7 @@ def scrape_fighter(fighter_url: str):
     res = requests.get(fighter_url)
     doc = BeautifulSoup(res.text, "html.parser")
     name = doc.find("span", {"class": "b-content__title-highlight"}).text
-    fighter["First"], fighter["Last"] = split_name(name)
+    fighter["Name"] = name.strip()
     fighter["Record"] = get_fighter_record(doc)
     return fighter
 

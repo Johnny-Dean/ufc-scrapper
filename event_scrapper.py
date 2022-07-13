@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from fighter_scrapper import split_name
 from database import get_database
 from typing import List
 import requests
@@ -22,13 +21,13 @@ def scrape_event(url: str):
         fighters = f.find_all("div", {"class": "c-listing-fight__detail-corner-name"})
         # Write this better
         first_fighter, second_fighter = {}, {}
-        first_fighter["First"], first_fighter["Last"] = split_name(fighters[0].text.strip())
-        second_fighter["First"], second_fighter["Last"] = split_name(fighters[1].text.strip())
+        first_fighter["Name"]  = fighters[0].text.strip()
+        second_fighter["Name"] = fighters[1].text.strip()
         fight_card["Fights"].append((first_fighter, second_fighter))
     # Fight Night we need to append the main fighters of the card to distinguish the fight nights
     if fight_card["Title"] == "UFC Fight Night":
         main_event = fight_card["Fights"][0]
-        fight_card["Title"] = "UFC Fight Night: " + main_event[0]["Last"] + " vs " + main_event[1]["Last"]
+        fight_card["Title"] = "UFC Fight Night: " + main_event[0]["Name"] + " vs " + main_event[1]["Name"]
     return fight_card
 
 
