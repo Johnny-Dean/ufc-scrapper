@@ -21,7 +21,7 @@ def get_fighter_record(doc) -> List:
         fight["Opponent"] = fight_info[2].text.strip()
         fight["Method"] = fight_info[13].text.strip()
         # Round should probably be type casted to integer in future scrapping
-        fight["Round"] = fight_info[15].text.strip()
+        fight["Round"] = int(fight_info[15].text.strip())
         fight["Time"] = fight_info[16].text.strip()
 
         result.append(fight)

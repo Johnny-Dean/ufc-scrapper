@@ -20,14 +20,13 @@ def scrape_event(url: str):
     for f in fights:
         fighters = f.find_all("div", {"class": "c-listing-fight__detail-corner-name"})
         # Write this better
-        first_fighter, second_fighter = {}, {}
-        first_fighter["Name"]  = fighters[0].text.strip()
-        second_fighter["Name"] = fighters[1].text.strip()
+        first_fighter = fighters[0].text.strip()
+        second_fighter = fighters[1].text.strip()
         fight_card["Fights"].append((first_fighter, second_fighter))
     # Fight Night we need to append the main fighters of the card to distinguish the fight nights
     if fight_card["Title"] == "UFC Fight Night":
         main_event = fight_card["Fights"][0]
-        fight_card["Title"] = "UFC Fight Night: " + main_event[0]["Name"] + " vs " + main_event[1]["Name"]
+        fight_card["Title"] = "UFC Fight Night: " + main_event[0] + " vs " + main_event[1]
     return fight_card
 
 
@@ -48,6 +47,7 @@ def get_event_urls() -> List[str]:
     return urls
 
 
+# Do I make these a main function that runs in github actions?
 if __name__ == "__main__":
     event_urls = get_event_urls()
     events = []
