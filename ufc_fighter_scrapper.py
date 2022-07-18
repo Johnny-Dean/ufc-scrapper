@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 from typing import List
-from database import get_database
+from database import store_many
 import requests
 
 
@@ -17,13 +17,12 @@ def get_fighter_record(doc) -> List:
         fight = {}
         fight_info = f.find_all("p", {"class": "b-fight-details__table-text"})
 
-        fight["Outcome"] = fight_info[0].i.text.capitalize()
-        fight["Opponent"] = fight_info[2].text.strip()
-        fight["Method"] = fight_info[13].text.strip()
+        fight["outcome"] = fight_info[0].i.text.capitalize()
+        fight["opponent"] = fight_info[2].text.strip()
+        fight["method"] = fight_info[13].text.strip()
         # Round should probably be type casted to integer in future scrapping
-        fight["Round"] = int(fight_info[15].text.strip())
-        fight["Time"] = fight_info[16].text.strip()
-
+        fight["round"] = int(fight_info[15].text.strip())
+        fight["time"] = fight_info[16].text.strip()
         result.append(fight)
     return result
 
@@ -38,8 +37,8 @@ def scrape_fighter(fighter_url: str):
     res = requests.get(fighter_url)
     doc = BeautifulSoup(res.text, "html.parser")
     name = doc.find("span", {"class": "b-content__title-highlight"}).text
-    fighter["Name"] = name.strip()
-    fighter["Record"] = get_fighter_record(doc)
+    fighter["name"] = name.strip()
+    fighter["record"] = get_fighter_record(doc)
     return fighter
 
 
@@ -67,12 +66,14 @@ def get_fighter_urls() -> List[str]:
     return result
 
 
-if __name__ == "__main__":
+def scrape_all_fighters():
     urls = get_fighter_urls()
     fighters = []
     for url in urls:
         fighters.append(scrape_fighter(url))
-    db = get_database()
-    collection = db["fighters"]
-    collection.drop()
-    collection.insert_many(fighters)
+    return fighters
+
+
+if __name__ == "__main__":
+    all_fighters = scrape_all_fighters()
+    store_many(all_fighters, "fighters")
