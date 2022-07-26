@@ -20,11 +20,11 @@ def scrape_event(url: str):
     else:
         fight_card["title"] = title[4:7]
     # Fights Scrape
-    fights = doc.find_all("tr", {"class": "b-fight-details__table-row b-fight-details__table-row__hover js-fight-details-click"})
+    fights = doc.find_all("tr", {
+        "class": "b-fight-details__table-row b-fight-details__table-row__hover js-fight-details-click"})
     for f in fights:
-
         fighters = f.find_all("a")
-        fight = {"Red":fighters[0].text.strip(), "Blue": fighters[1].text.strip()}
+        fight = {"red": fighters[0].text.strip(), "blue": fighters[1].text.strip()}
         fight_card["fights"].append(fight)
 
     return fight_card

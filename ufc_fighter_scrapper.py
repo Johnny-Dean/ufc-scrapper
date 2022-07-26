@@ -1,3 +1,5 @@
+import string
+
 from bs4 import BeautifulSoup
 from typing import List
 from database import store_many
@@ -20,11 +22,35 @@ def get_fighter_record(doc) -> List:
         fight["outcome"] = fight_info[0].i.text.capitalize()
         fight["opponent"] = fight_info[2].text.strip()
         fight["method"] = fight_info[13].text.strip()
-        # Round should probably be type casted to integer in future scrapping
         fight["round"] = int(fight_info[15].text.strip())
         fight["time"] = fight_info[16].text.strip()
         result.append(fight)
     return result
+
+
+def feet_inches_to_cm(height: string):
+    # Parse all numbers from our string
+    parsed_height = int(''.join(list(filter(str.isdigit, height))))
+    # Inches will start off as a single digit unless we find another digit to add onto it
+    inches = parsed_height % 10
+    # Pop the inches off
+    parsed_height = parsed_height // 10
+    # If we still have inches leftover (our feet should be less than 10)
+    while parsed_height > 10:
+        # Shift our inches over a decimal place and add our extra inch height
+        inches = (inches * 10) + (parsed_height % 10)
+        parsed_height = parsed_height // 10
+    # Unit conversion to cm
+    return (parsed_height * 30.48) + (inches * 2.54)
+
+
+def get_fighter_physical(doc):
+    physical_stats = doc.find("div", {"class": "b-list__info-box b-list__info-box_style_small-width js-guide"})
+    physical_stats = physical_stats.find_all("li")
+    height = feet_inches_to_cm(physical_stats[0].contents[2].text.strip())
+    weight = physical_stats[1].contents[2].text.strip()
+    print(height)
+    return ""
 
 
 def scrape_fighter(fighter_url: str):
@@ -39,6 +65,7 @@ def scrape_fighter(fighter_url: str):
     name = doc.find("span", {"class": "b-content__title-highlight"}).text
     fighter["name"] = name.strip()
     fighter["record"] = get_fighter_record(doc)
+    fighter["physical"] = get_fighter_physical(doc)
     return fighter
 
 
@@ -75,5 +102,10 @@ def scrape_all_fighters():
 
 
 if __name__ == "__main__":
-    all_fighters = scrape_all_fighters()
-    store_many(all_fighters, "fighters")
+    debug = 1
+    if debug:
+        print(scrape_fighter("http://ufcstats.com/fighter-details/b50a426a33da0012"))
+    else:
+        all_fighters = scrape_all_fighters()
+        # Would it be better to just use our server for scraping purposes? decoupling?
+        store_many(all_fighters, "fighters")
