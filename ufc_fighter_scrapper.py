@@ -1,4 +1,4 @@
-import string
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 from typing import List
@@ -28,29 +28,73 @@ def get_fighter_record(doc) -> List:
     return result
 
 
-def feet_inches_to_cm(height: string):
-    # Parse all numbers from our string
-    parsed_height = int(''.join(list(filter(str.isdigit, height))))
+def get_all_digits(to_parse):
+    """
+    Strip given string down to just digits.
+    :param to_parse: String containing digits
+    :return: Integer values contained in the string, if none returns 0.
+    """
+    # Check if we have a valid input
+    if to_parse.strip() == "--":
+        return 0
+    return int(''.join(list(filter(str.isdigit, to_parse))))
+
+
+def imperial_to_metric(height: int):
+    """
+    Converts our height from imperial to metric.
+    :param height to be converted
+    :return: Height in cm, 0.0 if no height available.
+    """
     # Inches will start off as a single digit unless we find another digit to add onto it
-    inches = parsed_height % 10
+    inches = height % 10
     # Pop the inches off
-    parsed_height = parsed_height // 10
+    height = height // 10
     # If we still have inches leftover (our feet should be less than 10)
-    while parsed_height > 10:
+    while height > 10:
         # Shift our inches over a decimal place and add our extra inch height
-        inches = (inches * 10) + (parsed_height % 10)
-        parsed_height = parsed_height // 10
+        inches = (inches * 10) + (height % 10)
+        height = height // 10
     # Unit conversion to cm
-    return (parsed_height * 30.48) + (inches * 2.54)
+    return (height * 30.48) + (inches * 2.54)
+
+
+def parse_birthday(birthday: str) -> int:
+    """
+    Converts the birthday string scraped from document to a time object which is then subtracted by the current date.
+    This gives us the age of the fighter at the time of the scraping
+    :param birthday: string representation of the fighters birthday.
+    :return: Age of the fighter, if not available returns 0.
+    """
+    # Invalid Input
+    if birthday.strip() == "--":
+        return 0
+
+    unparsed_birthday = birthday.strip().removeprefix("DOB:").strip()
+    age = datetime.today() - datetime.strptime(unparsed_birthday, "%b %d, %Y")
+    # Convert days to age
+    return int(age.days * 0.00273973)
 
 
 def get_fighter_physical(doc):
+    """ Scrape the fighter's physical features: height, weight, reach, and age
+
+    :param doc: Document object containing the HTML with the attributes needed
+    :return: Object containing the height, weight, reach, and age. If not available returns 0.
+
+    """
     physical_stats = doc.find("div", {"class": "b-list__info-box b-list__info-box_style_small-width js-guide"})
     physical_stats = physical_stats.find_all("li")
-    height = feet_inches_to_cm(physical_stats[0].contents[2].text.strip())
-    weight = physical_stats[1].contents[2].text.strip()
-    print(height)
-    return ""
+
+    unparsed_height = physical_stats[0].contents[2].text
+    parsed_height = get_all_digits(unparsed_height)
+    height = imperial_to_metric(parsed_height)
+
+    unparsed_weight = physical_stats[1].contents[2].text
+    weight = get_all_digits(unparsed_weight)
+    reach = get_all_digits(physical_stats[2].contents[2])
+    age = parse_birthday(physical_stats[4].contents[2])
+    return {"height": height, "weight": weight, "reach": reach, "age": age}
 
 
 def scrape_fighter(fighter_url: str):
@@ -64,8 +108,9 @@ def scrape_fighter(fighter_url: str):
     doc = BeautifulSoup(res.text, "html.parser")
     name = doc.find("span", {"class": "b-content__title-highlight"}).text
     fighter["name"] = name.strip()
-    fighter["record"] = get_fighter_record(doc)
     fighter["physical"] = get_fighter_physical(doc)
+    fighter["record"] = get_fighter_record(doc)
+    print(fighter)
     return fighter
 
 
@@ -104,7 +149,7 @@ def scrape_all_fighters():
 if __name__ == "__main__":
     debug = 1
     if debug:
-        print(scrape_fighter("http://ufcstats.com/fighter-details/b50a426a33da0012"))
+        print(scrape_fighter("http://ufcstats.com/fighter-details/b361180739bed4b0"))
     else:
         all_fighters = scrape_all_fighters()
         # Would it be better to just use our server for scraping purposes? decoupling?
