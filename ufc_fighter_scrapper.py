@@ -36,7 +36,7 @@ def get_all_digits(to_parse):
     """
     # Check if we have a valid input
     if to_parse.strip() == "--":
-        return 0
+        return None
     return int(''.join(list(filter(str.isdigit, to_parse))))
 
 
@@ -46,10 +46,17 @@ def imperial_to_metric(height: int):
     :param height to be converted
     :return: Height in cm, 0.0 if no height available.
     """
+    if height is None:
+        return None
     # Inches will start off as a single digit unless we find another digit to add onto it
     inches = height % 10
     # Pop the inches off
     height = height // 10
+    # Account for a trailing 0 ex: 510
+    if inches == 0:
+        leading_digit = height % 10
+        inches = int(str(leading_digit) + str(0))
+        height = height // 10
     # If we still have inches leftover (our feet should be less than 10)
     while height > 10:
         # Shift our inches over a decimal place and add our extra inch height
@@ -63,12 +70,12 @@ def parse_birthday(birthday: str) -> int:
     """
     Converts the birthday string scraped from document to a time object which is then subtracted by the current date.
     This gives us the age of the fighter at the time of the scraping
-    :param birthday: string representation of the fighters birthday.
+    :param birthday: string representation of the fighter's birthday.
     :return: Age of the fighter, if not available returns 0.
     """
     # Invalid Input
     if birthday.strip() == "--":
-        return 0
+        return None
 
     unparsed_birthday = birthday.strip().removeprefix("DOB:").strip()
     age = datetime.today() - datetime.strptime(unparsed_birthday, "%b %d, %Y")
@@ -99,7 +106,6 @@ def get_fighter_physical(doc):
 
 def scrape_fighter(fighter_url: str):
     """ Scrape a fighter for their first name, last name, and fight record
-
     :param fighter_url: webpage of a fighter from ufcstats.com
     :return: object that contains the first name, last name, and fight record
     """
@@ -147,9 +153,9 @@ def scrape_all_fighters():
 
 
 if __name__ == "__main__":
-    debug = 1
+    debug = 0
     if debug:
-        print(scrape_fighter("http://ufcstats.com/fighter-details/b361180739bed4b0"))
+        print(scrape_fighter("http://ufcstats.com/fighter-details/5442f1bc4b47eaf3"))
     else:
         all_fighters = scrape_all_fighters()
         # Would it be better to just use our server for scraping purposes? decoupling?
