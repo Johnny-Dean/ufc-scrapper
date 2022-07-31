@@ -53,7 +53,7 @@ def imperial_to_metric(height: int):
     # Pop the inches off
     height = height // 10
     # Account for a trailing 0 ex: 510
-    if inches == 0:
+    if inches == 0 and height > 10:
         leading_digit = height % 10
         inches = int(str(leading_digit) + str(0))
         height = height // 10
@@ -104,6 +104,41 @@ def get_fighter_physical(doc):
     return {"height": height, "weight": weight, "reach": reach, "age": age}
 
 
+def strip_stat_doc(element, prefix_to_remove):
+    stripped_element = element.text.strip()
+    return stripped_element.removeprefix(prefix_to_remove).strip()
+
+
+def get_fighter_stats(doc):
+    # Striking
+    striking_stats = doc.find("ul", {"class": "b-list__box-list b-list__box-list_margin-top"})
+    striking_stats = striking_stats.find_all("li")
+    strikes_per_minute = strip_stat_doc(striking_stats[0], "SLpM:")
+    strike_accuracy = (strip_stat_doc(striking_stats[1], "Str. Acc.:"))
+    strikes_absorbed = strip_stat_doc(striking_stats[2], "SApM:")
+    strike_defense = (strip_stat_doc(striking_stats[3], "Str. Def:"))
+    # Takedown
+    takedown_stats = doc.find("div", {"class": "b-list__info-box-right b-list__info-box_style-margin-right"})
+    takedown_stats = takedown_stats.find_all("li")
+    takedown_average = strip_stat_doc(takedown_stats[1], "TD Avg.:")
+    takedown_accuracy = (strip_stat_doc(takedown_stats[2], "TD Acc.:"))
+    takedown_defense = (strip_stat_doc(takedown_stats[3], "TD Def.:"))
+    submissions_attempted = strip_stat_doc(takedown_stats[4], "Sub. Avg.:")
+    return {
+        "striking": {
+            "strikes_per_minute": strikes_per_minute,
+            "strikes_absorbed": strikes_absorbed,
+            "strike_accuracy": strike_accuracy,
+            "strike_defense": strike_defense
+        },
+        "ground": {
+            "takedown_average": takedown_average,
+            "takedown_accuracy": takedown_accuracy,
+            "takedown_defense": takedown_defense,
+            "submissions_attempted": submissions_attempted
+        }}
+
+
 def scrape_fighter(fighter_url: str):
     """ Scrape a fighter for their first name, last name, and fight record
     :param fighter_url: webpage of a fighter from ufcstats.com
@@ -115,6 +150,7 @@ def scrape_fighter(fighter_url: str):
     name = doc.find("span", {"class": "b-content__title-highlight"}).text
     fighter["name"] = name.strip()
     fighter["physical"] = get_fighter_physical(doc)
+    fighter["stats"] = get_fighter_stats(doc)
     fighter["record"] = get_fighter_record(doc)
     print(fighter)
     return fighter
@@ -155,7 +191,7 @@ def scrape_all_fighters():
 if __name__ == "__main__":
     debug = 0
     if debug:
-        print(scrape_fighter("http://ufcstats.com/fighter-details/5442f1bc4b47eaf3"))
+        print(scrape_fighter("http://ufcstats.com/fighter-details/efb96bf3e9ada36f"))
     else:
         all_fighters = scrape_all_fighters()
         # Would it be better to just use our server for scraping purposes? decoupling?
